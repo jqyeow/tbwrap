@@ -12,7 +12,7 @@ func NewPollerWithAllowedUserAndGroups(pollTimout time.Duration, allowedUsers []
 	return tb.NewMiddlewarePoller(poller, func(upd *tb.Update) bool {
 		allowedUsersAndGroups := append(allowedUsers, allowedGroups...)
 
-		// allow request if no restrictions are set
+		// allow request from any user/group if no restrictions are set
 		if len(allowedUsersAndGroups) == 0 {
 			return true
 		}

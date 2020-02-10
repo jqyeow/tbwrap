@@ -21,7 +21,7 @@ type context struct {
 	chat     *tb.Chat
 	text     string
 	callback *tb.Callback
-	chatID  int
+	chatID   int
 	params   map[string]string
 	route    *regexp.Regexp
 }

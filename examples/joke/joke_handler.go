@@ -19,7 +19,7 @@ func HandleJoke() func(c tbwrap.Context) error {
 			return err
 		}
 		req.Header.Add("Accept", "application/json")
-		
+
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
 			return err

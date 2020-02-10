@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	telegramBotToken := MustGetEnv("TELEGRAM_BOT_TOKEN")
+	telegramBotToken := mustGetEnv("TELEGRAM_BOT_TOKEN")
 	allowedUsers := parseUsersAndGroups(os.Getenv("ALLOWED_USERS"))
 	allowedGroups := parseUsersAndGroups(os.Getenv("ALLOWED_GROUPS"))
 
@@ -25,12 +25,11 @@ func main() {
 		log.Fatal(err)
 	}
 
-	telegramBot.Add("/ping", HandlePing())
 	telegramBot.AddRegExp(`\/hello (?P<name>.*)`, HandleHello())
 	telegramBot.Start()
 }
 
-func MustGetEnv(name string) string {
+func mustGetEnv(name string) string {
 	value := os.Getenv(name)
 	if value == "" {
 		log.Fatalln(fmt.Sprintf("%s must be set", name))

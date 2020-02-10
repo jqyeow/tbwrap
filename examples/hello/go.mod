@@ -1,4 +1,4 @@
-module github.com/enrico5b1b4/tbwrap/examples/helloworld
+module github.com/enrico5b1b4/tbwrap/examples/hello
 
 go 1.12
 

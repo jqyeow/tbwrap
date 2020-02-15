@@ -6,13 +6,13 @@ import (
 	"github.com/enrico5b1b4/tbwrap"
 )
 
-type HelloMessage struct {
+type GreetMessage struct {
 	Name string `regexpGroup:"name"`
 }
 
-func HandleHello() func(c tbwrap.Context) error {
+func HandleGreet() func(c tbwrap.Context) error {
 	return func(c tbwrap.Context) error {
-		message := new(HelloMessage)
+		message := new(GreetMessage)
 		if err := c.Bind(message); err != nil {
 			return err
 		}

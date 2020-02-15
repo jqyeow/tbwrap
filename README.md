@@ -10,9 +10,10 @@ go get github.com/enrico5b1b4/tbwrap
 ## Examples
 
 [Ping Bot](./examples/ping) - A bot which responds to your ping with a pong  
-[Hello Bot](./examples/ping) - A bot which greets you  
+[Greet Bot](./examples/greet) - A bot which greets you  
 [Todo List Bot](./examples/todo) - A bot that keeps a todo list for you  
-[Joke Bot](./examples/joke) - A bot that sends you a joke
+[Joke Bot](./examples/joke) - A bot that tells you a joke  
+[Weather Bot](./examples/weather) - A bot that tells you the weather forecast  
 
 ## Usage
 ### Simple
@@ -36,27 +37,56 @@ func main() {
 		log.Fatal(err)
 	}
 
-	telegramBot.Add(`/ping`, func(c tbwrap.Context) error {
+	telegramBot.Handle(`/ping`, func(c tbwrap.Context) error {
 		return c.Send("pong!")
 	})
 	telegramBot.Start()
 }
 ```
-### Private bot
-You can make the bot respond only to certain chats (users or groups) by passing a list of ids.  
+### Handlers
+There are three ways you can register handlers to respond to a user's message
 
+### Handle
+Invokes handler if message matches the text provided
 ```go
 // ...
-botConfig := tbwrap.Config{
-    Token:         telegramBotToken,
-    AllowedUsers:  []int{"123456","234567","345678"}, // only users with these ids can interact with the bot
-    AllowedGroups: []int{"-999999"}, // only groups with these ids can interact with the bot
+func main() {
+	// ...
+	telegramBot.Handle(`/ping`, func(c tbwrap.Context) error {
+		// ...
+		return c.Send("...")
+	})
+	// ...
 }
-telegramBot, err := tbwrap.NewBot(botConfig)
-if err != nil {
-    log.Fatal(err)
-}
+```
+
+### HandleRegExp
+Invokes handler if message matches the regular expression provided
+```go
 // ...
+func main() {
+	// ...
+	telegramBot.HandleRegExp(`\/greet (?P<name>.*)`, func(c tbwrap.Context) error {
+		// ...
+		return c.Send("...")
+    })
+	// ...
+}
+```
+### HandleMultiRegExp
+Invokes handler if message matches any of the regular expressions provided
+```go
+// ...
+func main() {
+	// ...
+	telegramBot.HandleMultiRegExp([]string{
+		`\/greet (?P<name>.*)`,
+		`\/welcome (?P<name>.*)`,
+	}, func(c tbwrap.Context) error {
+		// ...
+		return c.Send("...")
+    })
+	// ...
 }
 ```
 ### Messages
@@ -64,20 +94,38 @@ Use regular expression named capturing groups to parametrise incoming messages
 ```go
 // ...
 
-type HelloMessage struct {
+type GreetMessage struct {
     Name string `regexpGroup:"name"`
 }
 
 func main() {
 	// ...
-	telegramBot.AddRegExp(`\/hello (?P<name>.*)`, func(c tbwrap.Context) error {
-		message := new(HelloMessage)
+	telegramBot.HandleRegExp(`\/greet (?P<name>.*)`, func(c tbwrap.Context) error {
+		message := new(GreetMessage)
 		if err := c.Bind(message); err != nil {
 			return err
 		}
 
 		return c.Send(fmt.Sprintf("Hello %s!", message.Name))
     })
+	// ...
+}
+```
+### Private bot
+You can make the bot respond only to certain chats (users or groups) by passing a list of ids.  
+
+```go
+// ...
+func main() {
+	// ...
+	botConfig := tbwrap.Config{
+		Token:  telegramBotToken,
+		AllowedChats:  []int{"123456","234567","-999999"}, // only user and group chats with these ids can interact with the bot
+	}
+	telegramBot, err := tbwrap.NewBot(botConfig)
+	if err != nil {
+		log.Fatal(err)
+	}
 	// ...
 }
 ```

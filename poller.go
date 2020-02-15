@@ -6,23 +6,21 @@ import (
 	tb "gopkg.in/tucnak/telebot.v2"
 )
 
-func NewPollerWithAllowedUserAndGroups(pollTimout time.Duration, allowedUsers []int, allowedGroups []int) *tb.MiddlewarePoller {
+func NewPollerWithAllowedChats(pollTimout time.Duration, chats []int) *tb.MiddlewarePoller {
 	poller := &tb.LongPoller{Timeout: pollTimout}
 
 	return tb.NewMiddlewarePoller(poller, func(upd *tb.Update) bool {
-		allowedUsersAndGroups := append(allowedUsers, allowedGroups...)
-
 		// allow request from any user/group if no restrictions are set
-		if len(allowedUsersAndGroups) == 0 {
+		if len(chats) == 0 {
 			return true
 		}
 
 		if upd.Message != nil {
-			return isInList(int(upd.Message.Chat.ID), allowedUsersAndGroups)
+			return isInList(int(upd.Message.Chat.ID), chats)
 		}
 
 		if upd.Callback != nil {
-			return isInList(int(upd.Callback.Message.Chat.ID), allowedUsersAndGroups)
+			return isInList(int(upd.Callback.Message.Chat.ID), chats)
 		}
 
 		return false

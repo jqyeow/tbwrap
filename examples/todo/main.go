@@ -12,13 +12,11 @@ import (
 
 func main() {
 	telegramBotToken := mustGetEnv("TELEGRAM_BOT_TOKEN")
-	allowedUsers := parseUsersAndGroups(os.Getenv("ALLOWED_USERS"))
-	allowedGroups := parseUsersAndGroups(os.Getenv("ALLOWED_GROUPS"))
+	allowedChats := parseAllowedChats(os.Getenv("ALLOWED_CHATS"))
 
 	botConfig := tbwrap.Config{
-		Token:         telegramBotToken,
-		AllowedUsers:  allowedUsers,
-		AllowedGroups: allowedGroups,
+		Token:        telegramBotToken,
+		AllowedChats: allowedChats,
 	}
 	telegramBot, err := tbwrap.NewBot(botConfig)
 	if err != nil {
@@ -27,9 +25,9 @@ func main() {
 
 	todos := make(map[int][]string)
 
-	telegramBot.Add("/todo list", HandleList(todos))
-	telegramBot.AddRegExp(`\/todo add (?P<value>.*)`, HandleAdd(todos))
-	telegramBot.AddRegExp(`\/todo remove (?P<index>.*)`, HandleRemove(todos))
+	telegramBot.Handle("/todo list", HandleList(todos))
+	telegramBot.HandleRegExp(`\/todo add (?P<value>.*)`, HandleAdd(todos))
+	telegramBot.HandleRegExp(`\/todo remove (?P<index>.*)`, HandleRemove(todos))
 	telegramBot.Start()
 }
 
@@ -42,7 +40,7 @@ func mustGetEnv(name string) string {
 	return value
 }
 
-func parseUsersAndGroups(list string) []int {
+func parseAllowedChats(list string) []int {
 	if len(list) == 0 {
 		return nil
 	}

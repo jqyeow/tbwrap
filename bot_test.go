@@ -1,44 +1,143 @@
 package tbwrap_test
 
-import "testing"
+import (
+	"errors"
+	"log"
+	"testing"
 
-func Test_TBWrapBot_Add(t *testing.T) {
+	"github.com/enrico5b1b4/tbwrap"
+	"github.com/enrico5b1b4/tbwrap/fakes"
+	"github.com/stretchr/testify/assert"
+)
 
-	// testTeleBot := &test.TeleBot{}
-	// testTeleBot.Start()
+func Test_TBWrap_HandleSuccess(t *testing.T) {
+	fakeTeleBot := fakes.NewTeleBot()
+	tbWrapBot := NewTBWrapBot(fakeTeleBot)
+	tbWrapBot.Handle("/test", func(c tbwrap.Context) error {
+		assert.Equal(t, "/test", c.Text())
+		assert.Equal(t, 1, c.ChatID())
 
-	// // connect to this socket
-	// conn, _ := net.Dial("tcp", "127.0.0.1:8081")
-	// for {
-	// 	// read in input from stdin
-	// 	reader := bufio.NewReader(os.Stdin)
-	// 	fmt.Print("Text to send: ")
-	// 	text, _ := reader.ReadString('\n')
-	// 	// send to socket
-	// 	fmt.Fprintf(conn, text+"\n")
-	// 	// listen for reply
-	// 	message, _ := bufio.NewReader(conn).ReadString('\n')
-	// 	fmt.Print("Message from server: " + message)
-	// }
+		return nil
+	})
+	tbWrapBot.Start()
 
-	// assert.True(t, true)
+	fakeTeleBot.SimulateIncomingMessageToChat(1, "/test")
+}
 
-	// mockCtrl := gomock.NewController(t)
-	// defer mockCtrl.Finish()
+func Test_TBWrap_HandleError(t *testing.T) {
+	fakeTeleBot := fakes.NewTeleBot()
+	tbWrapBot := NewTBWrapBot(fakeTeleBot)
+	tbWrapBot.Handle("/test", func(c tbwrap.Context) error {
+		return errors.New("error")
+	})
+	tbWrapBot.Start()
 
-	// mockTeleBot := mocks.NewMockTeleBot(mockCtrl)
-	// mockTeleBot.EXPECT().Start().Return()
-	// mockTeleBot.EXPECT().Handle(gomock.Any(), gomock.Any()).Return().AnyTimes()
-	// testBot := &tbwrap.TBWrapBot{
-	// 	TBot: mockTeleBot,
-	// }
+	fakeTeleBot.SimulateIncomingMessageToChat(1, "/test")
 
-	// called := false
-	// testBot.Add("test", func(c tbwrap.Context) error {
-	// 	called = true
-	// 	return c.Send("test")
-	// })
-	// testBot.Start()
+	assert.Contains(t, fakeTeleBot.OutboundSendMessages, "error")
+}
 
-	// assert.True(t, called)
+func Test_TBWrap_HandleRegExpSuccess(t *testing.T) {
+	fakeTeleBot := fakes.NewTeleBot()
+	tbWrapBot := NewTBWrapBot(fakeTeleBot)
+	tbWrapBot.HandleRegExp(`\/remind (?P<who>\w+)`, func(c tbwrap.Context) error {
+		assert.Equal(t, "/remind Bob", c.Text())
+		assert.Equal(t, "Bob", c.Param("who"))
+		assert.Equal(t, 1, c.ChatID())
+
+		return nil
+	})
+	tbWrapBot.Start()
+
+	fakeTeleBot.SimulateIncomingMessageToChat(1, "/remind Bob")
+}
+
+func Test_TBWrap_HandleRegExpError(t *testing.T) {
+	fakeTeleBot := fakes.NewTeleBot()
+	tbWrapBot := NewTBWrapBot(fakeTeleBot)
+	tbWrapBot.HandleRegExp(`\/remind (?P<who>\w+)`, func(c tbwrap.Context) error {
+		return errors.New("error")
+	})
+	tbWrapBot.Start()
+
+	fakeTeleBot.SimulateIncomingMessageToChat(1, "/remind Bob")
+
+	assert.Contains(t, fakeTeleBot.OutboundSendMessages, "error")
+}
+
+func Test_TBWrap_HandleMultiRegExpSuccess(t *testing.T) {
+	fakeTeleBot := fakes.NewTeleBot()
+	tbWrapBot := NewTBWrapBot(fakeTeleBot)
+	tbWrapBot.HandleMultiRegExp([]string{`\/remind (?P<who>\w+)`, `\/tell (?P<who>\w+)`}, func(c tbwrap.Context) error {
+		assert.Equal(t, "Bob", c.Param("who"))
+		assert.Equal(t, 1, c.ChatID())
+
+		return nil
+	})
+	tbWrapBot.Start()
+
+	fakeTeleBot.SimulateIncomingMessageToChat(1, "/remind Bob")
+}
+
+func Test_TBWrap_HandleMultiRegExpError(t *testing.T) {
+	fakeTeleBot := fakes.NewTeleBot()
+	tbWrapBot := NewTBWrapBot(fakeTeleBot)
+	tbWrapBot.HandleMultiRegExp([]string{`\/remind (?P<who>\w+)`, `\/tell (?P<who>\w+)`}, func(c tbwrap.Context) error {
+		return errors.New("error")
+	})
+	tbWrapBot.Start()
+
+	fakeTeleBot.SimulateIncomingMessageToChat(1, "/remind Bob")
+
+	assert.Contains(t, fakeTeleBot.OutboundSendMessages, "error")
+}
+
+func Test_TBWrap_BindMessage(t *testing.T) {
+	type Message struct {
+		Who string `regexpGroup:"who"`
+	}
+
+	fakeTeleBot := fakes.NewTeleBot()
+	tbWrapBot := NewTBWrapBot(fakeTeleBot)
+	tbWrapBot.HandleMultiRegExp([]string{`\/remind (?P<who>\w+)`, `\/tell (?P<who>\w+)`}, func(c tbwrap.Context) error {
+		m := new(Message)
+		err := c.Bind(m)
+		assert.NoError(t, err)
+		assert.Equal(t, "Bob", m.Who)
+
+		return nil
+	})
+	tbWrapBot.Start()
+
+	fakeTeleBot.SimulateIncomingMessageToChat(1, "/remind Bob")
+}
+
+func Test_TBWrap_SendMessageFromHandler(t *testing.T) {
+	type Message struct {
+		Who string `regexpGroup:"who"`
+	}
+
+	fakeTeleBot := fakes.NewTeleBot()
+	tbWrapBot := NewTBWrapBot(fakeTeleBot)
+	tbWrapBot.Handle("/test", func(c tbwrap.Context) error {
+		c.Send("a message")
+
+		return nil
+	})
+	tbWrapBot.Start()
+
+	fakeTeleBot.SimulateIncomingMessageToChat(1, "/test")
+
+	assert.Contains(t, fakeTeleBot.OutboundSendMessages, "a message")
+}
+
+func NewTBWrapBot(tBot tbwrap.TeleBot) *tbwrap.TBWrapBot {
+	bot, err := tbwrap.NewBot(tbwrap.Config{
+		TBot: tBot,
+	})
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	return bot
 }

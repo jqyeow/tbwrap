@@ -1,4 +1,4 @@
-module github.com/enrico5b1b4/tbwrap/examples/hello
+module github.com/enrico5b1b4/tbwrap/examples/weather
 
 go 1.12
 

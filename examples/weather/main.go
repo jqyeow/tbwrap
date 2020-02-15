@@ -10,6 +10,7 @@ import (
 
 func main() {
 	telegramBotToken := mustGetEnv("TELEGRAM_BOT_TOKEN")
+	openWeatherMapAPIKey := mustGetEnv("OPENWEATHERMAP_API_KEY")
 
 	botConfig := tbwrap.Config{
 		Token: telegramBotToken,
@@ -19,9 +20,9 @@ func main() {
 		log.Fatal(err)
 	}
 
-	telegramBot.Handle(`/ping`, func(c tbwrap.Context) error {
-		return c.Send("pong!")
-	})
+	weatherService := NewWeatherService(openWeatherMapAPIKey)
+
+	telegramBot.HandleRegExp(`\/weather in (?P<location>.*)`, HandleWeather(weatherService))
 	telegramBot.Start()
 }
 

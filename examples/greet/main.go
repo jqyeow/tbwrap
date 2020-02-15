@@ -12,20 +12,18 @@ import (
 
 func main() {
 	telegramBotToken := mustGetEnv("TELEGRAM_BOT_TOKEN")
-	allowedUsers := parseUsersAndGroups(os.Getenv("ALLOWED_USERS"))
-	allowedGroups := parseUsersAndGroups(os.Getenv("ALLOWED_GROUPS"))
+	allowedChats := parseAllowedChats(os.Getenv("ALLOWED_CHATS"))
 
 	botConfig := tbwrap.Config{
-		Token:         telegramBotToken,
-		AllowedUsers:  allowedUsers,
-		AllowedGroups: allowedGroups,
+		Token:        telegramBotToken,
+		AllowedChats: allowedChats,
 	}
 	telegramBot, err := tbwrap.NewBot(botConfig)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	telegramBot.AddRegExp(`\/hello (?P<name>.*)`, HandleHello())
+	telegramBot.HandleRegExp(`\/greet (?P<name>.*)`, HandleGreet())
 	telegramBot.Start()
 }
 
@@ -38,7 +36,7 @@ func mustGetEnv(name string) string {
 	return value
 }
 
-func parseUsersAndGroups(list string) []int {
+func parseAllowedChats(list string) []int {
 	if len(list) == 0 {
 		return nil
 	}

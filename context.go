@@ -1,5 +1,7 @@
 package tbwrap
 
+//go:generate mockgen -destination=./mocks/mock_Context.go -package=mocks github.com/enrico5b1b4/tbwrap Context
+
 import (
 	"regexp"
 

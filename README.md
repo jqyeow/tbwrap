@@ -49,8 +49,8 @@ You can make the bot respond only to certain chats (users or groups) by passing 
 // ...
 botConfig := tbwrap.Config{
     Token:         telegramBotToken,
-    AllowedUsers:  "123456,234567,345678", // only users with these ids can interact with the bot
-    AllowedGroups: "-999999", // only groups with these ids can interact with the bot
+    AllowedUsers:  []int{"123456","234567","345678"}, // only users with these ids can interact with the bot
+    AllowedGroups: []int{"-999999"}, // only groups with these ids can interact with the bot
 }
 telegramBot, err := tbwrap.NewBot(botConfig)
 if err != nil {

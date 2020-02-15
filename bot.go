@@ -1,5 +1,8 @@
 package tbwrap
 
+//go:generate mockgen -destination=./mocks/mock_Bot.go -package=mocks github.com/enrico5b1b4/tbwrap Bot
+//go:generate mockgen -destination=./mocks/mock_TeleBot.go -package=mocks github.com/enrico5b1b4/tbwrap TeleBot
+
 import (
 	"fmt"
 	"log"
@@ -28,9 +31,9 @@ type Bot interface {
 	Send(to tb.Recipient, what interface{}, options ...interface{}) (*tb.Message, error)
 }
 
-type bot struct {
-	tBot   TeleBot
-	routes map[*regexp.Regexp]*Route
+type TBWrapBot struct {
+	TBot   TeleBot
+	Routes map[*regexp.Regexp]*Route
 }
 
 type Config struct {
@@ -39,7 +42,7 @@ type Config struct {
 	AllowedGroups []int
 }
 
-func NewBot(cfg Config) (*bot, error) {
+func NewBot(cfg Config) (*TBWrapBot, error) {
 	poller := NewPollerWithAllowedUserAndGroups(15*time.Second, cfg.AllowedUsers, cfg.AllowedGroups)
 	tBot, err := tb.NewBot(tb.Settings{
 		Token:  cfg.Token,
@@ -49,49 +52,49 @@ func NewBot(cfg Config) (*bot, error) {
 		return nil, err
 	}
 
-	b := &bot{
-		tBot:   tBot,
-		routes: map[*regexp.Regexp]*Route{},
+	b := &TBWrapBot{
+		TBot:   tBot,
+		Routes: map[*regexp.Regexp]*Route{},
 	}
 
-	b.handle(tb.OnText, func(m *tb.Message) {
-		// all the text messages that weren't
-		// captured by existing handlers
-		b.HandleOnText(m.Text, m.Chat)
-	})
+	// b.handle(tb.OnText, func(m *tb.Message) {
+	// 	// all the text messages that weren't
+	// 	// captured by existing handlers
+	// 	b.HandleOnText(m.Text, m.Chat)
+	// })
 
 	return b, nil
 }
 
-func (b *bot) handle(endpoint interface{}, handler interface{}) {
-	b.tBot.Handle(endpoint, handler)
+func (b *TBWrapBot) handle(endpoint interface{}, handler interface{}) {
+	b.TBot.Handle(endpoint, handler)
 }
 
-func (b *bot) Respond(callback *tb.Callback, responseOptional ...*tb.CallbackResponse) error {
-	return b.tBot.Respond(callback, responseOptional...)
+func (b *TBWrapBot) Respond(callback *tb.Callback, responseOptional ...*tb.CallbackResponse) error {
+	return b.TBot.Respond(callback, responseOptional...)
 }
 
-func (b *bot) Send(to tb.Recipient, what interface{}, options ...interface{}) (*tb.Message, error) {
+func (b *TBWrapBot) Send(to tb.Recipient, what interface{}, options ...interface{}) (*tb.Message, error) {
 	mergedOptions := append([]interface{}{&tb.SendOptions{ParseMode: tb.ModeMarkdown}}, options...)
 
-	return b.tBot.Send(to, what, mergedOptions...)
+	return b.TBot.Send(to, what, mergedOptions...)
 }
 
-func (b *bot) AddRegExp(path string, handler HandlerFunc) {
+func (b *TBWrapBot) AddRegExp(path string, handler HandlerFunc) {
 	compiledRegExp := regexp.MustCompile(path)
 
-	b.routes[compiledRegExp] = &Route{Path: compiledRegExp, Handler: handler}
+	b.Routes[compiledRegExp] = &Route{Path: compiledRegExp, Handler: handler}
 }
 
-func (b *bot) AddMultiRegExp(paths []string, handler HandlerFunc) {
+func (b *TBWrapBot) AddMultiRegExp(paths []string, handler HandlerFunc) {
 	for i := range paths {
 		compiledRegExp := regexp.MustCompile(paths[i])
 
-		b.routes[compiledRegExp] = &Route{Path: compiledRegExp, Handler: handler}
+		b.Routes[compiledRegExp] = &Route{Path: compiledRegExp, Handler: handler}
 	}
 }
 
-func (b *bot) Add(path string, handler HandlerFunc) {
+func (b *TBWrapBot) Add(path string, handler HandlerFunc) {
 	b.handle(path, func(m *tb.Message) {
 		c := &context{chat: m.Chat, text: m.Text, chatID: int(m.Chat.ID), bot: b}
 		err := handler(c)
@@ -102,7 +105,7 @@ func (b *bot) Add(path string, handler HandlerFunc) {
 	})
 }
 
-func (b *bot) AddButton(path *tb.InlineButton, handler HandlerFunc) {
+func (b *TBWrapBot) AddButton(path *tb.InlineButton, handler HandlerFunc) {
 	b.handle(path, func(callback *tb.Callback) {
 		c := &context{
 			chat:     callback.Message.Chat,
@@ -119,15 +122,15 @@ func (b *bot) AddButton(path *tb.InlineButton, handler HandlerFunc) {
 	})
 }
 
-func (b *bot) HandleOnText(text string, chat *tb.Chat) {
-	for regExpKey := range b.routes {
+func (b *TBWrapBot) HandleOnText(text string, chat *tb.Chat) {
+	for regExpKey := range b.Routes {
 		matches := regExpKey.FindStringSubmatch(text)
 		names := regExpKey.SubexpNames()
 
 		if len(matches) > 0 {
 			params := mapSubexpNames(matches, names)
 			c := &context{chat: chat, text: text, params: params, chatID: int(chat.ID), route: regExpKey, bot: b}
-			err := b.routes[regExpKey].Handler(c)
+			err := b.Routes[regExpKey].Handler(c)
 			if err != nil {
 				_ = c.Send(fmt.Sprintf("%s", err))
 				log.Println(err)
@@ -136,8 +139,14 @@ func (b *bot) HandleOnText(text string, chat *tb.Chat) {
 	}
 }
 
-func (b *bot) Start() {
-	b.tBot.Start()
+func (b *TBWrapBot) Start() {
+	b.handle(tb.OnText, func(m *tb.Message) {
+		// all the text messages that weren't
+		// captured by existing handlers
+		b.HandleOnText(m.Text, m.Chat)
+	})
+
+	b.TBot.Start()
 }
 
 func mapSubexpNames(m, n []string) map[string]string {

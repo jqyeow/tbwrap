@@ -89,7 +89,22 @@ func main() {
 	// ...
 }
 ```
-### Messages
+### Messages  
+Read the user's incoming message with `c.Text()`  
+```go
+// ...
+
+func main() {
+	// ...
+	telegramBot.HandleRegExp(`\/greet (?P<name>.*)`, func(c tbwrap.Context) error {
+		// ...
+		fmt.Println(c.Text()) // "/greet Enrico"
+
+		return c.Send("Hello!")
+    })
+	// ...
+}
+```
 Use regular expression named capturing groups to parametrise incoming messages
 ```go
 // ...
@@ -105,6 +120,8 @@ func main() {
 		if err := c.Bind(message); err != nil {
 			return err
 		}
+
+		fmt.Println(message.Name) // "Enrico"
 
 		return c.Send(fmt.Sprintf("Hello %s!", message.Name))
     })

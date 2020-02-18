@@ -113,16 +113,10 @@ func Test_TBWrap_BindMessage(t *testing.T) {
 }
 
 func Test_TBWrap_SendMessageFromHandler(t *testing.T) {
-	type Message struct {
-		Who string `regexpGroup:"who"`
-	}
-
 	fakeTeleBot := fakes.NewTeleBot()
 	tbWrapBot := NewTBWrapBot(fakeTeleBot)
 	tbWrapBot.Handle("/test", func(c tbwrap.Context) error {
-		c.Send("a message")
-
-		return nil
+		return c.Send("a message")
 	})
 	tbWrapBot.Start()
 

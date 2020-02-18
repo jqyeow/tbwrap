@@ -34,9 +34,7 @@ func (t *TeleBot) Send(to tb.Recipient, what interface{}, options ...interface{}
 	return nil, nil
 }
 
-func (t *TeleBot) Start() {
-	return
-}
+func (t *TeleBot) Start() {}
 
 func (t *TeleBot) SimulateIncomingMessageToChat(chatID int, text string) {
 	if handler, ok := t.handler[text]; ok {

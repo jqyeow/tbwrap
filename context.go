@@ -24,7 +24,6 @@ type context struct {
 	chat     *tb.Chat
 	text     string
 	callback *tb.Callback
-	chatID   int
 	params   map[string]string
 	route    *regexp.Regexp
 }
@@ -33,17 +32,21 @@ func NewContext(
 	bot Bot,
 	chat *tb.Chat,
 	text string,
-	chatID int,
 	callback *tb.Callback,
-	params map[string]string,
 	route *regexp.Regexp,
 ) Context {
+	var params map[string]string
+	if route != nil {
+		matches := route.FindStringSubmatch(text)
+		names := route.SubexpNames()
+		params = mapSubexpNames(matches, names)
+	}
+
 	return &context{
 		bot:      bot,
 		chat:     chat,
 		text:     text,
 		callback: callback,
-		chatID:   chatID,
 		route:    route,
 		params:   params,
 	}
@@ -56,7 +59,7 @@ func (c *context) Param(key string) string {
 }
 
 func (c *context) ChatID() int {
-	return c.chatID
+	return int(c.chat.ID)
 }
 
 func (c *context) Text() string {
@@ -79,4 +82,17 @@ func (c *context) Send(msg string, options ...interface{}) error {
 
 func (c *context) Bind(i interface{}) error {
 	return capture.Parse(c.route.String(), c.Text(), i)
+}
+
+func mapSubexpNames(m, n []string) map[string]string {
+	if len(m) == 0 || len(n) == 0 {
+		return nil
+	}
+
+	m, n = m[1:], n[1:]
+	r := make(map[string]string, len(m))
+	for i := range n {
+		r[n[i]] = m[i]
+	}
+	return r
 }

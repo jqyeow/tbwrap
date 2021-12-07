@@ -18,7 +18,6 @@ func NewPollerWithAllowedChats(pollTimout time.Duration, chats []int) *tb.Middle
 
 		fmt.Println("Chat ID:")
 		fmt.Println(upd.Message.Chat.ID)
-		fmt.Println(upd.Message.ChatID)
 		if upd.Message != nil {
 			return isInList(int(upd.Message.Chat.ID), chats)
 		}

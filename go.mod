@@ -1,4 +1,4 @@
-module github.com/enrico5b1b4/tbwrap
+module github.com/jqyeow/tbwrap
 
 go 1.13
 

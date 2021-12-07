@@ -1,6 +1,7 @@
 package tbwrap
 
 import (
+	"fmt"
 	"time"
 
 	tb "gopkg.in/tucnak/telebot.v2"
@@ -15,6 +16,9 @@ func NewPollerWithAllowedChats(pollTimout time.Duration, chats []int) *tb.Middle
 			return true
 		}
 
+		fmt.Println("Chat ID:")
+		fmt.Println(upd.Message.Chat.ID)
+		fmt.Println(upd.Message.ChatID)
 		if upd.Message != nil {
 			return isInList(int(upd.Message.Chat.ID), chats)
 		}
